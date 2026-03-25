@@ -1,0 +1,12 @@
+# Railway config-as-code
+# Docs: https://docs.railway.com/config-as-code/reference
+
+[build]
+# A `Dockerfile` exists in the repo, so Railway will use it by default.
+builder = "DOCKERFILE"
+
+[deploy]
+# Run as a long-lived worker (Telegram polling bot).
+startCommand = "python -m writer_ai_assistant run"
+restartPolicyType = "ALWAYS"
+
