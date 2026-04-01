@@ -13,6 +13,11 @@ class Mode(StrEnum):
     REWRITE = "rewrite"
     GRAMMAR = "grammar"
     EXPLAIN = "explain"
+    SHORTEN = "shorten"
+    FRIENDLY = "friendly"
+    PROFESSIONAL = "professional"
+    POLISH = "polish"
+    NORMAL = "normal"
 
 
 @dataclass(frozen=True)
@@ -76,12 +81,13 @@ def prompt_spec_for_mode(mode: Mode) -> PromptSpec:
         return PromptSpec(
             instructions="\n".join(
                 [
-                    "Task: Write 1–3 short work chat replies.",
-                    "Keep each reply concise (1–2 sentences).",
+                    "Task: Write one best possible work chat reply.",
+                    "Keep it concise (1–3 sentences).",
+                    "Do not provide multiple options unless explicitly asked.",
                     "No greetings unless the user asks for them.",
                 ]
             ),
-            user_prefix="Write short professional work replies to this message/context:",
+            user_prefix="Write the best professional work reply to this message/context:",
         )
     if mode == Mode.IMPROVE:
         return PromptSpec(
@@ -130,6 +136,31 @@ def prompt_spec_for_mode(mode: Mode) -> PromptSpec:
             ),
             user_prefix="Explain this term/word/phrase:",
         )
+    if mode == Mode.SHORTEN:
+        return PromptSpec(
+            instructions="Task: Shorten the provided text significantly while keeping its core message. Remove filler words and unnecessary detail.",
+            user_prefix="Shorten this text:",
+        )
+    if mode == Mode.FRIENDLY:
+        return PromptSpec(
+            instructions="Task: Rewrite the text to sound friendly, warm, and approachable. Keep it professional but polite and welcoming.",
+            user_prefix="Make this text friendly:",
+        )
+    if mode == Mode.PROFESSIONAL:
+        return PromptSpec(
+            instructions="Task: Rewrite the text to sound highly professional, formal, and authoritative.",
+            user_prefix="Make this text professional:",
+        )
+    if mode == Mode.POLISH:
+        return PromptSpec(
+            instructions="Task: Polish the text. Improve flow, vocabulary, and overall quality without changing the length significantly.",
+            user_prefix="Polish this text:",
+        )
+    if mode == Mode.NORMAL:
+        return PromptSpec(
+            instructions="Task: Rewrite the text in a standard, clear, and neutral tone. Neither too formal nor too casual.",
+            user_prefix="Rewrite in a normal tone:",
+        )
 
     raise ValueError(f"Unsupported mode: {mode}")
 
@@ -147,6 +178,7 @@ def build_user_input(
     length: str = "normal",
     signature: str = "",
     template_instruction: str = "",
+    extra_instruction: str = "",
 ) -> str:
     spec = prompt_spec_for_mode(mode)
     cleaned = (user_text or "").strip()
@@ -158,6 +190,11 @@ def build_user_input(
         meta_lines.append(f"Signature: {signature.strip()}")
     if template_instruction.strip():
         meta_lines.append(f"Template: {template_instruction.strip()}")
+    
+    instr_text = spec.instructions
+    if extra_instruction:
+        instr_text += f"\nNote: {extra_instruction}"
+
     meta = "\n".join(meta_lines)
 
-    return f"{spec.user_prefix}\n\n{meta}\n\nText:\n{cleaned}"
+    return f"{spec.user_prefix}\n\n{meta}\n\nAdditional Requirements: {instr_text}\n\nText:\n{cleaned}"

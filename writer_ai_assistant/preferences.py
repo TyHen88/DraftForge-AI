@@ -13,6 +13,9 @@ class ChatPreferences:
     signature: str = ""
     pending_mode: Mode | None = None
     template: str = ""  # template key
+    reply_context: str = ""
+    reply_step: str = ""  # awaiting_context | awaiting_confirmation | awaiting_tone | awaiting_additional
+    email_step: str = ""  # awaiting_context | awaiting_tone
 
 
 def load_prefs(chat_data: dict) -> ChatPreferences:
@@ -23,6 +26,9 @@ def load_prefs(chat_data: dict) -> ChatPreferences:
         length=(chat_data.get("length") or "normal"),
         signature=(chat_data.get("signature") or ""),
         template=(chat_data.get("template") or ""),
+        reply_context=(chat_data.get("reply_context") or ""),
+        reply_step=(chat_data.get("reply_step") or ""),
+        email_step=(chat_data.get("email_step") or ""),
     )
     if mode_val:
         try:
@@ -53,3 +59,6 @@ def save_prefs(chat_data: dict, prefs: ChatPreferences) -> None:
         chat_data["pending_mode"] = prefs.pending_mode.value
 
     chat_data["template"] = prefs.template
+    chat_data["reply_context"] = prefs.reply_context
+    chat_data["reply_step"] = prefs.reply_step
+    chat_data["email_step"] = prefs.email_step

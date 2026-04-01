@@ -15,6 +15,14 @@ BTN_GRAMMAR = "✅ Grammar"
 BTN_EXPLAIN = "📚 Explain"
 BTN_TONE = "🎭 Tone"
 BTN_BACK = "⬅️ Back"
+BTN_YES = "✅ YES"
+BTN_NO = "❌ NO"
+
+BTN_SHORTEN = "🤏 Shorten"
+BTN_FRIENDLY = "😊 Friendly"
+BTN_PROFESSIONAL_MODE = "👔 Professional"
+BTN_POLISH = "✨ Polish"
+BTN_NORMAL = "🆗 Normal"
 
 TEMPLATE_BUTTONS: dict[str, str] = {
     "blog_post": "📝 Blog Post",
@@ -24,10 +32,14 @@ TEMPLATE_BUTTONS: dict[str, str] = {
 }
 
 TONE_BUTTONS: dict[str, str] = {
-    "professional": "💼 professional",
-    "academic": "🎓 academic",
-    "marketing": "📣 marketing",
-    "storytelling": "📖 storytelling",
+    "shortened": "🤏 Shortened",
+    "friendly": "😊 Friendly",
+    "professional": "💼 Professional",
+    "academic": "🎓 Academic",
+    "marketing": "📣 Marketing",
+    "storytelling": "📖 Storytelling",
+    "polished": "✨ Polished",
+    "normal": "🆗 Normal",
 }
 
 
@@ -39,8 +51,9 @@ def main_menu() -> ReplyKeyboardMarkup:
     rows = [
         [KeyboardButton(BTN_IDEA), KeyboardButton(BTN_TEMPLATES), KeyboardButton(BTN_TONE)],
         [KeyboardButton(BTN_EMAIL), KeyboardButton(BTN_REPLY)],
-        [KeyboardButton(BTN_IMPROVE), KeyboardButton(BTN_REWRITE)],
-        [KeyboardButton(BTN_GRAMMAR), KeyboardButton(BTN_EXPLAIN)],
+        [KeyboardButton(BTN_IMPROVE), KeyboardButton(BTN_REWRITE), KeyboardButton(BTN_GRAMMAR)],
+        [KeyboardButton(BTN_SHORTEN), KeyboardButton(BTN_FRIENDLY), KeyboardButton(BTN_PROFESSIONAL_MODE)],
+        [KeyboardButton(BTN_POLISH), KeyboardButton(BTN_NORMAL), KeyboardButton(BTN_EXPLAIN)],
     ]
     return ReplyKeyboardMarkup(rows, resize_keyboard=True, one_time_keyboard=False)
 
@@ -65,7 +78,7 @@ def templates_menu() -> ReplyKeyboardMarkup:
 
 
 def tone_menu(current: str) -> ReplyKeyboardMarkup:
-    tones = ["professional", "academic", "marketing", "storytelling"]
+    tones = ["shortened", "friendly", "professional", "academic", "marketing", "storytelling", "polished", "normal"]
     rows: list[list[KeyboardButton]] = []
     row: list[KeyboardButton] = []
     for tone in tones:
@@ -87,3 +100,11 @@ def template_key_from_button(text: str) -> str | None:
         if normalized == label.strip().lower():
             return key
     return None
+
+
+def yes_no_menu() -> ReplyKeyboardMarkup:
+    rows = [
+        [KeyboardButton(BTN_YES), KeyboardButton(BTN_NO)],
+        [KeyboardButton(BTN_BACK)],
+    ]
+    return ReplyKeyboardMarkup(rows, resize_keyboard=True, one_time_keyboard=False)

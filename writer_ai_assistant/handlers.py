@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from telegram import BotCommand, MenuButtonCommands, Update
+from telegram import BotCommand, MenuButtonCommands, ReplyKeyboardMarkup, Update
 from telegram.constants import ChatAction
 from telegram.ext import ContextTypes
 
@@ -16,10 +16,18 @@ from writer_ai_assistant.menu_ui import (
     BTN_REWRITE,
     BTN_TEMPLATES,
     BTN_TONE,
+    BTN_YES,
+    BTN_NO,
+    BTN_SHORTEN,
+    BTN_FRIENDLY,
+    BTN_PROFESSIONAL_MODE,
+    BTN_POLISH,
+    BTN_NORMAL,
     main_menu,
     template_key_from_button,
     templates_menu,
     tone_menu,
+    yes_no_menu,
 )
 from writer_ai_assistant.openai_service import OpenAIService
 from writer_ai_assistant.preferences import load_prefs, save_prefs
@@ -58,9 +66,23 @@ def _extract_command_text(context: ContextTypes.DEFAULT_TYPE) -> str:
 
 
 def _normalize_tone_choice(text: str) -> str | None:
-    t = (text or "").strip().lower().replace("✅", "").strip()
-    for tone in ("professional", "academic", "marketing", "storytelling"):
-        if tone in t:
+    t = (text or "").strip().lower()
+    # Remove common markers
+    for marker in ("💼", "🎓", "📣", "📖", "✅", "🤏", "😊", "✨", "🆗"):
+        t = t.replace(marker, "")
+    t = t.strip()
+
+    for tone in (
+        "shortened",
+        "friendly",
+        "professional",
+        "academic",
+        "marketing",
+        "storytelling",
+        "polished",
+        "normal",
+    ):
+        if t == tone:
             return tone
     return None
 
@@ -172,8 +194,31 @@ async def mode_command_handler(
     user_text = _extract_command_text(context)
     if not user_text:
         prefs.pending_mode = mode
+        if mode == Mode.REPLY:
+            prefs.reply_step = "awaiting_context"
+        if mode == Mode.EMAIL:
+            prefs.email_step = "awaiting_context"
         save_prefs(context.chat_data, prefs)
-        await update.message.reply_text(f"OK - send the text for /{mode.value}.", reply_markup=main_menu())
+        msg = f"OK - send the text for /{mode.value}."
+        if mode == Mode.REPLY:
+            msg = "💬 Send the message or context you want to respond to."
+        if mode == Mode.EMAIL:
+            msg = "✉️ Send the email context/draft."
+        await update.message.reply_text(msg, reply_markup=main_menu())
+        return
+
+    # For EMAIL and REPLY, redirect to the multi-step flow instead of immediate processing
+    if mode in (Mode.EMAIL, Mode.REPLY):
+        prefs.pending_mode = mode
+        prefs.reply_context = user_text
+        if mode == Mode.EMAIL:
+            prefs.email_step = "awaiting_tone"
+            save_prefs(context.chat_data, prefs)
+            await update.message.reply_text("Select the tone for your email:", reply_markup=tone_menu(prefs.tone))
+        else:
+            prefs.reply_step = "awaiting_confirmation"
+            save_prefs(context.chat_data, prefs)
+            await update.message.reply_text("Confirm the response:", reply_markup=yes_no_menu())
         return
 
     prefs.pending_mode = None
@@ -238,6 +283,11 @@ async def text_message_handler(
 
     # Menu navigation (reply keyboard button labels)
     if text == BTN_BACK:
+        # Reset any flow states
+        prefs.reply_step = ""
+        prefs.reply_context = ""
+        prefs.email_step = ""
+        save_prefs(context.chat_data, prefs)
         await update.message.reply_text("Menu:", reply_markup=main_menu())
         return
     if text == BTN_TEMPLATES:
@@ -245,13 +295,6 @@ async def text_message_handler(
         return
     if text == BTN_TONE:
         await update.message.reply_text(f"🎭 Current tone: {prefs.tone}", reply_markup=tone_menu(prefs.tone))
-        return
-
-    tone_choice = _normalize_tone_choice(text)
-    if tone_choice:
-        prefs.tone = tone_choice
-        save_prefs(context.chat_data, prefs)
-        await update.message.reply_text(f"🎭 Tone set to: {tone_choice}", reply_markup=main_menu())
         return
 
     if template_key_from_button(text) or text in {t.title for t in TEMPLATES.values()}:
@@ -268,6 +311,7 @@ async def text_message_handler(
     if text == BTN_EMAIL:
         prefs.mode = Mode.EMAIL
         prefs.pending_mode = Mode.EMAIL
+        prefs.email_step = "awaiting_context"
         prefs.template = ""
         save_prefs(context.chat_data, prefs)
         await update.message.reply_text("✉️ Send the email context/draft.", reply_markup=main_menu())
@@ -275,9 +319,11 @@ async def text_message_handler(
     if text == BTN_REPLY:
         prefs.mode = Mode.REPLY
         prefs.pending_mode = Mode.REPLY
+        prefs.reply_step = "awaiting_context"
+        prefs.reply_context = ""
         prefs.template = ""
         save_prefs(context.chat_data, prefs)
-        await update.message.reply_text("💬 Send the message/context you want to reply to.", reply_markup=main_menu())
+        await update.message.reply_text("💬 Send the message or context you want to respond to.", reply_markup=main_menu())
         return
     if text == BTN_IMPROVE:
         prefs.mode = Mode.IMPROVE
@@ -307,11 +353,141 @@ async def text_message_handler(
         save_prefs(context.chat_data, prefs)
         await update.message.reply_text("📚 Send the word/term to explain.", reply_markup=main_menu())
         return
+    if text == BTN_SHORTEN:
+        prefs.mode = Mode.SHORTEN
+        prefs.pending_mode = Mode.SHORTEN
+        save_prefs(context.chat_data, prefs)
+        await update.message.reply_text("🤏 Send the text to shorten.", reply_markup=main_menu())
+        return
+    if text == BTN_FRIENDLY:
+        prefs.mode = Mode.FRIENDLY
+        prefs.pending_mode = Mode.FRIENDLY
+        save_prefs(context.chat_data, prefs)
+        await update.message.reply_text("😊 Send the text to make friendly.", reply_markup=main_menu())
+        return
+    if text == BTN_PROFESSIONAL_MODE:
+        prefs.mode = Mode.PROFESSIONAL
+        prefs.pending_mode = Mode.PROFESSIONAL
+        save_prefs(context.chat_data, prefs)
+        await update.message.reply_text("👔 Send the text to make professional.", reply_markup=main_menu())
+        return
+    if text == BTN_POLISH:
+        prefs.mode = Mode.POLISH
+        prefs.pending_mode = Mode.POLISH
+        save_prefs(context.chat_data, prefs)
+        await update.message.reply_text("✨ Send the text to polish.", reply_markup=main_menu())
+        return
+    if text == BTN_NORMAL:
+        prefs.mode = Mode.NORMAL
+        prefs.pending_mode = Mode.NORMAL
+        save_prefs(context.chat_data, prefs)
+        await update.message.reply_text("🆗 Send the text to rewrite in a normal tone.", reply_markup=main_menu())
+        return
 
     # Normal text processing (pending mode first, else last mode)
     mode = prefs.pending_mode or prefs.mode
     if mode is None:
         await update.message.reply_text(HELP_TEXT, reply_markup=main_menu())
+        return
+
+    # Special handling for REPLY flow
+    if mode == Mode.REPLY and prefs.reply_step:
+        if prefs.reply_step == "awaiting_context":
+            prefs.reply_context = text
+            prefs.reply_step = "awaiting_confirmation"
+            save_prefs(context.chat_data, prefs)
+            await update.message.reply_text("Confirm the response:", reply_markup=yes_no_menu())
+            return
+
+        if prefs.reply_step == "awaiting_confirmation":
+            if text in (BTN_YES, BTN_NO):
+                prefs.reply_step = "awaiting_tone"
+                save_prefs(context.chat_data, prefs)
+                await update.message.reply_text("Select the tone for your reply:", reply_markup=tone_menu(prefs.tone))
+                return
+            else:
+                await update.message.reply_text("Please choose YES or NO.", reply_markup=yes_no_menu())
+                return
+
+        if prefs.reply_step == "awaiting_tone":
+            tone_sel = _normalize_tone_choice(text)
+            if tone_sel:
+                prefs.tone = tone_sel
+                prefs.reply_step = "awaiting_additional"
+                save_prefs(context.chat_data, prefs)
+                
+                await update.message.reply_text(f"Tone set to: {tone_sel}. Generating initial response...")
+                await _process_text(
+                    update,
+                    context,
+                    mode=mode,
+                    user_text=prefs.reply_context,
+                    settings=settings,
+                    limiter=limiter,
+                    openai_service=openai_service,
+                )
+                await update.message.reply_text("Please provide any additional input or details to refine this, or just send 'Done'.")
+                return
+            else:
+                await update.message.reply_text("Please select a tone from the menu.", reply_markup=tone_menu(prefs.tone))
+                return
+
+        if prefs.reply_step == "awaiting_additional":
+            additional = "" if text.lower() == "done" else text
+            full_context = f"Context: {prefs.reply_context}\nAdditional Details: {additional}"
+            # Reset state for next time
+            prefs.reply_step = ""
+            prefs.reply_context = ""
+            save_prefs(context.chat_data, prefs)
+
+            await update.message.reply_text("Generating the best possible answer...")
+            await _process_text(
+                update,
+                context,
+                mode=mode,
+                user_text=full_context,
+                settings=settings,
+                limiter=limiter,
+                openai_service=openai_service,
+                extra_instruction="You are now in the final step. Review the context and additional details carefully and provide only ONE best possible reply that addresses everything. Do not provide options.",
+            )
+            return
+
+    # Special handling for EMAIL flow
+    if mode == Mode.EMAIL and prefs.email_step:
+        if prefs.email_step == "awaiting_context":
+            prefs.reply_context = text # Reusing field for simplicity
+            prefs.email_step = "awaiting_tone"
+            save_prefs(context.chat_data, prefs)
+            await update.message.reply_text("Select the tone for your email:", reply_markup=tone_menu(prefs.tone))
+            return
+
+        if prefs.email_step == "awaiting_tone":
+            tone_sel = _normalize_tone_choice(text)
+            if tone_sel:
+                prefs.tone = tone_sel
+                prefs.email_step = ""
+                save_prefs(context.chat_data, prefs)
+                await update.message.reply_text("Generating your email...")
+                await _process_text(
+                    update,
+                    context,
+                    mode=mode,
+                    user_text=prefs.reply_context,
+                    settings=settings,
+                    limiter=limiter,
+                    openai_service=openai_service,
+                )
+                return
+            else:
+                await update.message.reply_text("Please select a tone from the menu.", reply_markup=tone_menu(prefs.tone))
+                return
+
+    tone_choice = _normalize_tone_choice(text)
+    if tone_choice:
+        prefs.tone = tone_choice
+        save_prefs(context.chat_data, prefs)
+        await update.message.reply_text(f"🎭 Tone set to: {tone_choice}", reply_markup=main_menu())
         return
 
     if prefs.pending_mode is not None:
@@ -338,6 +514,8 @@ async def _process_text(
     settings: Settings,
     limiter: SlidingWindowRateLimiter,
     openai_service: OpenAIService,
+    custom_reply_markup: ReplyKeyboardMarkup | None = None,
+    extra_instruction: str = "",
 ) -> None:
     if not update.message:
         return
@@ -379,6 +557,7 @@ async def _process_text(
             length=prefs.length,
             signature=prefs.signature,
             template_instruction=template_instruction,
+            extra_instruction=extra_instruction,
         )
     except Exception:
         await update.message.reply_text("Sorry - I couldn't generate a response right now. Please try again.", reply_markup=main_menu())
@@ -388,5 +567,7 @@ async def _process_text(
         await update.message.reply_text("No output returned. Try rephrasing your request.", reply_markup=main_menu())
         return
 
+    markup = custom_reply_markup if custom_reply_markup is not None else main_menu()
+
     for part in split_for_telegram(result):
-        await update.message.reply_text(part, disable_web_page_preview=True, reply_markup=main_menu())
+        await update.message.reply_text(part, disable_web_page_preview=True, reply_markup=markup)
