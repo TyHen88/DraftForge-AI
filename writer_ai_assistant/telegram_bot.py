@@ -37,6 +37,9 @@ def build_application(
 ) -> Application:
     app = ApplicationBuilder().token(settings.telegram_bot_token).post_init(post_init).build()
 
+    # Make the Mini App URL available to post_init (which only receives the application).
+    app.bot_data["webapp_url"] = settings.webapp_url
+
     logging.getLogger(__name__).info("OpenAI base_url=%s model=%s role=%s", settings.openai_base_url, settings.openai_model, settings.openai_system_role)
 
     app.add_handler(CommandHandler("start", start_handler))

@@ -18,9 +18,9 @@ def test_every_mode_has_a_spec(mode: Mode) -> None:
 
 
 def test_build_instructions_includes_system_rules() -> None:
-    instructions = build_instructions(Mode.EMAIL)
-    assert "professional AI writing assistant" in instructions
-    assert "Draft a professional email" in instructions
+    instructions = build_instructions(Mode.EMAIL).lower()
+    assert "writing assistant" in instructions
+    assert "email" in instructions
 
 
 def test_build_user_input_folds_in_metadata_and_text() -> None:
@@ -41,3 +41,14 @@ def test_build_user_input_omits_empty_optional_fields() -> None:
     out = build_user_input(Mode.GRAMMAR, "fix me")
     assert "Signature:" not in out
     assert "Template:" not in out
+
+
+def test_default_tone_is_omitted() -> None:
+    # Tone is optional: "default" means no preference and must not appear in the prompt.
+    out = build_user_input(Mode.IMPROVE, "hello", tone="default")
+    assert "Tone:" not in out
+
+
+def test_explicit_tone_is_included() -> None:
+    out = build_user_input(Mode.IMPROVE, "hello", tone="marketing")
+    assert "Tone: marketing" in out

@@ -40,6 +40,7 @@ def build_settings(tmp_path: Path, *, max_requests: int = 20) -> Settings:
         frontend_origin="*",
         db_path=str(tmp_path / "api.db"),
         initdata_max_age_seconds=86400,
+        webapp_url="",
     )
 
 

@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from telegram import BotCommand, MenuButtonCommands, ReplyKeyboardMarkup, Update
+from telegram import (
+    BotCommand,
+    MenuButtonCommands,
+    MenuButtonWebApp,
+    ReplyKeyboardMarkup,
+    Update,
+    WebAppInfo,
+)
 from telegram.constants import ChatAction
 from telegram.ext import ContextTypes
 
@@ -103,9 +110,18 @@ async def post_init(application) -> None:
         BotCommand("clearsignature", "Clear signature"),
         BotCommand("help", "Show help"),
     ]
+    webapp_url = (application.bot_data.get("webapp_url") or "").strip()
     try:
         await application.bot.set_my_commands(commands)
-        await application.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
+        if webapp_url:
+            # Menu button opens the Mini App instead of the command list.
+            await application.bot.set_chat_menu_button(
+                menu_button=MenuButtonWebApp(
+                    text="Open App", web_app=WebAppInfo(url=webapp_url)
+                )
+            )
+        else:
+            await application.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
     except Exception:
         # Non-fatal (permissions or older clients)
         pass

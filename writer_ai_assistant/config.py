@@ -45,6 +45,9 @@ class Settings:
     db_path: str
     initdata_max_age_seconds: int
 
+    # Public HTTPS URL of the Mini App. When set, the bot's menu button opens it.
+    webapp_url: str
+
 
 def load_settings() -> Settings:
     # Find .env from current working directory upwards so running from a different cwd still works.
@@ -81,4 +84,5 @@ def load_settings() -> Settings:
         frontend_origin=os.getenv("FRONTEND_ORIGIN", "*").strip() or "*",
         db_path=os.getenv("DB_PATH", "writer_ai.db").strip() or "writer_ai.db",
         initdata_max_age_seconds=_get_int("INITDATA_MAX_AGE_SECONDS", 86400),
+        webapp_url=os.getenv("WEBAPP_URL", "").strip(),
     )
