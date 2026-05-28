@@ -1,5 +1,11 @@
 # AI Writing Assistant (Telegram + Python + OpenAI)
 
+> **Historical document — original MVP design spec (pre-implementation).** The shipped
+> bot has since diverged from parts of this plan (e.g. it runs on polling, not webhooks;
+> `/explain` and `/improve` behave differently; the file layout is a flat package). For the
+> current architecture and commands see [CLAUDE.md](CLAUDE.md); for the agreed roadmap see
+> [docs/mini-app-analysis.md](docs/mini-app-analysis.md). Kept as a record of original intent.
+
 ## 1) Project Overview
 
 ### Objective

@@ -9,20 +9,20 @@ from writer_ai_assistant.menu_ui import (
     BTN_BACK,
     BTN_EMAIL,
     BTN_EXPLAIN,
+    BTN_FRIENDLY,
     BTN_GRAMMAR,
     BTN_IDEA,
     BTN_IMPROVE,
+    BTN_NO,
+    BTN_NORMAL,
+    BTN_POLISH,
+    BTN_PROFESSIONAL_MODE,
     BTN_REPLY,
     BTN_REWRITE,
+    BTN_SHORTEN,
     BTN_TEMPLATES,
     BTN_TONE,
     BTN_YES,
-    BTN_NO,
-    BTN_SHORTEN,
-    BTN_FRIENDLY,
-    BTN_PROFESSIONAL_MODE,
-    BTN_POLISH,
-    BTN_NORMAL,
     main_menu,
     template_key_from_button,
     templates_menu,
@@ -35,7 +35,6 @@ from writer_ai_assistant.prompt_builder import Mode
 from writer_ai_assistant.rate_limit import SlidingWindowRateLimiter
 from writer_ai_assistant.templates import TEMPLATES, get_template
 from writer_ai_assistant.text_utils import split_for_telegram
-
 
 HELP_TEXT = (
     "Writer AI Assistant\n\n"

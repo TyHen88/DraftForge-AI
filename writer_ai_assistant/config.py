@@ -38,6 +38,13 @@ class Settings:
     openai_timeout_seconds: int
     log_level: str
 
+    # Web API (Mini App backend). Unused by the polling bot.
+    api_host: str
+    api_port: int
+    frontend_origin: str
+    db_path: str
+    initdata_max_age_seconds: int
+
 
 def load_settings() -> Settings:
     # Find .env from current working directory upwards so running from a different cwd still works.
@@ -68,4 +75,10 @@ def load_settings() -> Settings:
         rate_limit_window_seconds=_get_int("RATE_LIMIT_WINDOW_SECONDS", 60),
         openai_timeout_seconds=_get_int("OPENAI_TIMEOUT_SECONDS", 30),
         log_level=os.getenv("LOG_LEVEL", "INFO").strip() or "INFO",
+        api_host=os.getenv("API_HOST", "0.0.0.0").strip() or "0.0.0.0",
+        # Railway injects PORT; fall back to API_PORT then a local default.
+        api_port=_get_int("PORT", _get_int("API_PORT", 8000)),
+        frontend_origin=os.getenv("FRONTEND_ORIGIN", "*").strip() or "*",
+        db_path=os.getenv("DB_PATH", "writer_ai.db").strip() or "writer_ai.db",
+        initdata_max_age_seconds=_get_int("INITDATA_MAX_AGE_SECONDS", 86400),
     )

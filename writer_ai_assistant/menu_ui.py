@@ -4,7 +4,6 @@ from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 
 from writer_ai_assistant.templates import TEMPLATES
 
-
 BTN_IDEA = "💡 Idea"
 BTN_TEMPLATES = "🧩 Templates"
 BTN_EMAIL = "✉️ Email"

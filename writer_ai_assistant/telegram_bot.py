@@ -14,8 +14,8 @@ from writer_ai_assistant.handlers import (
     post_init,
     signature_handler,
     start_handler,
-    text_message_handler,
     templates_handler,
+    text_message_handler,
     tone_handler,
 )
 from writer_ai_assistant.openai_service import OpenAIService
