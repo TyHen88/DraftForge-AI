@@ -6,7 +6,8 @@
 builder = "DOCKERFILE"
 
 [deploy]
-# Run as a long-lived worker (Telegram polling bot).
-startCommand = "python -m writer_ai_assistant run"
+# Combined process: FastAPI API (on $PORT) + the polling bot in one asyncio loop.
+# The service is a "web" target — Railway routes HTTP to it and injects PORT.
+startCommand = "python -m writer_ai_assistant web"
 restartPolicyType = "ALWAYS"
 

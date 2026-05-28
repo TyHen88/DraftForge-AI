@@ -3,9 +3,15 @@ from __future__ import annotations
 import logging
 from functools import partial
 
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+from telegram.ext import (
+    Application,
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
 
-from writer_ai_assistant.config import load_settings
+from writer_ai_assistant.config import Settings, load_settings
 from writer_ai_assistant.handlers import (
     clear_signature_handler,
     help_handler,
@@ -23,20 +29,12 @@ from writer_ai_assistant.prompt_builder import Mode
 from writer_ai_assistant.rate_limit import SlidingWindowRateLimiter
 
 
-def run_polling() -> None:
-    settings = load_settings()
-
-    logging.basicConfig(
-        level=getattr(logging, settings.log_level.upper(), logging.INFO),
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
-
-    limiter = SlidingWindowRateLimiter(
-        max_requests=settings.rate_limit_max_requests,
-        window_seconds=settings.rate_limit_window_seconds,
-    )
-    openai_service = OpenAIService(settings)
-
+def build_application(
+    settings: Settings,
+    *,
+    limiter: SlidingWindowRateLimiter,
+    openai_service: OpenAIService,
+) -> Application:
     app = ApplicationBuilder().token(settings.telegram_bot_token).post_init(post_init).build()
 
     logging.getLogger(__name__).info("OpenAI base_url=%s model=%s role=%s", settings.openai_base_url, settings.openai_model, settings.openai_system_role)
@@ -146,6 +144,25 @@ def run_polling() -> None:
             ),
         )
     )
+
+    return app
+
+
+def run_polling() -> None:
+    settings = load_settings()
+
+    logging.basicConfig(
+        level=getattr(logging, settings.log_level.upper(), logging.INFO),
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
+    limiter = SlidingWindowRateLimiter(
+        max_requests=settings.rate_limit_max_requests,
+        window_seconds=settings.rate_limit_window_seconds,
+    )
+    openai_service = OpenAIService(settings)
+
+    app = build_application(settings, limiter=limiter, openai_service=openai_service)
 
     logging.getLogger(__name__).info("Bot starting (polling)...")
     app.run_polling(allowed_updates=None)
