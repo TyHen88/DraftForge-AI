@@ -55,9 +55,17 @@ def load_settings() -> Settings:
     load_dotenv(find_dotenv(usecwd=True), override=True)
 
     telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
-    openai_api_key = os.getenv("OPENAI_API_KEY", "").strip()
-    openai_base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").strip()
-    openai_model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini").strip()
+
+    # Support OLLAMA_* variables directly, normalizing OLLAMA_API_URL to the OpenAI compatible /v1 endpoint
+    ollama_api_url = os.getenv("OLLAMA_API_URL", "").strip()
+    if ollama_api_url.endswith("/api/chat"):
+        ollama_api_url = ollama_api_url.replace("/api/chat", "/v1")
+    elif ollama_api_url.endswith("/api"):
+        ollama_api_url = ollama_api_url.replace("/api", "/v1")
+
+    openai_api_key = os.getenv("OLLAMA_API_KEY", os.getenv("OPENAI_API_KEY", "")).strip()
+    openai_base_url = ollama_api_url or os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").strip()
+    openai_model = os.getenv("OLLAMA_MODEL", os.getenv("OPENAI_MODEL", "gpt-4.1-mini")).strip()
     openai_system_role = os.getenv("OPENAI_SYSTEM_ROLE", "system").strip().lower() or "system"
 
     if not telegram_bot_token:
