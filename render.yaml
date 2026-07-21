@@ -1,0 +1,65 @@
+# Render Blueprint Specification for deploying the WriterAi Backend.
+# Place this at the root of your Git repository (inside the backend/ folder).
+# Docs: https://render.com/docs/blueprints
+
+services:
+  - type: web
+    name: writer-ai-backend
+    runtime: docker
+    
+    # Render's starter plan is needed to support persistent disks (for sqlite db).
+    # If you want to use the free tier, change plan to 'free' and remove the 'disk' section below.
+    # Note: on the free tier without a disk, the sqlite database will be ephemeral and resets on restart.
+    plan: starter 
+    
+    # Path to Dockerfile relative to git repo root (defaults to ./Dockerfile)
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+
+    envVars:
+      # Required secrets. Render will prompt you for TELEGRAM_BOT_TOKEN on initial deploy.
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+
+      # Ollama API Integration
+      - key: OLLAMA_API_KEY
+        sync: false
+      - key: OLLAMA_API_URL
+        value: https://ollama.com/api/chat
+      - key: OLLAMA_MODEL
+        value: gpt-oss:120b
+      - key: OPENAI_SYSTEM_ROLE
+        value: system
+
+      # Application behavior limits
+      - key: MAX_INPUT_CHARS
+        value: "8000"
+      - key: MAX_OUTPUT_TOKENS
+        value: "800"
+      - key: TEMPERATURE
+        value: "0.7"
+
+      # Rate limiting settings
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "20"
+      - key: RATE_LIMIT_WINDOW_SECONDS
+        value: "60"
+
+      # Database Configuration
+      # Points to the persistent disk mount directory to preserve database changes across restarts.
+      # If using free tier (no persistent disk), change value to: writer_ai.db
+      - key: DB_PATH
+        value: /app/data/writer_ai.db
+
+      # CORS & Networking config
+      - key: FRONTEND_ORIGIN
+        value: "*"
+      - key: LOG_LEVEL
+        value: INFO
+
+    # Persistent disk for storing sqlite database.
+    # This prevents user preferences and chat history state from resetting on service restarts.
+    disk:
+      name: writer-ai-data
+      mountPath: /app/data
+      sizeGB: 1
